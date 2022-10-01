@@ -49,15 +49,15 @@ int64_t BUStep(const Graph &g, pvector<NodeID> &parent, Bitmap &front,
   int64_t awake_count = 0;
   next.reset();
   NodeID nv = g.num_nodes();
-  NodeID NV_blk_sz = nv / ELEMS_PER_CACHE_LINE;
+  NodeID NV_blk_sz = nv / U64_ELEMS_PER_CACHE_LINE;
   #pragma omp parallel for firstprivate(nv, NV_blk_sz) reduction(+ : awake_count) schedule(static)
   for (NodeID u=0; u < NV_blk_sz; u++) {
-    NodeID NV_beg = u * ELEMS_PER_CACHE_LINE;
-    NodeID NV_end = std::min(nv, ((u + 1) * ELEMS_PER_CACHE_LINE));
+    NodeID NV_beg = u * U64_ELEMS_PER_CACHE_LINE;
+    NodeID NV_end = std::min(nv, ((u + 1) * U64_ELEMS_PER_CACHE_LINE));
     
     next.zero(NV_beg, NV_end);
 
-    for(NodeID j = 0; j < ELEMS_PER_CACHE_LINE; j++) {  
+    for(NodeID j = 0; j < U64_ELEMS_PER_CACHE_LINE; j++) {  
       if (parent[NV_beg+j] < 0) {
         for (NodeID v : g.in_neigh(NV_beg+j)) {
           if (front.get_bit(v)) {
