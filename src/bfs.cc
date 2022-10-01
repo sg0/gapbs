@@ -43,7 +43,7 @@ them in parent array as negative numbers. Thus the encoding of parent is:
 
 using namespace std;
 
-#ifdef ZFILL_CACHE_LINES
+#if defined(ZFILL_CACHE_LINES) && defined(__ARM_ARCH) && __ARM_ARCH >= 8
 int64_t BUStep(const Graph &g, pvector<NodeID> &parent, Bitmap &front,
                Bitmap &next) {
   int64_t awake_count = 0;

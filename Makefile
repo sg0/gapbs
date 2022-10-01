@@ -18,7 +18,7 @@ ifneq (,$(findstring FCC,$(CXX)))
 endif
 
 ifneq (,$(findstring g++,$(CXX)))
-	CXX_FLAGS = -std=c++11 -O3 -march=armv8.2-a+sve -mtune=a64fx -DZFILL_CACHE_LINES 
+	CXX_FLAGS = -std=c++11 -O3 -march=armv8.2-a+sve -mtune=a64fx #-DZFILL_CACHE_LINES 
 	PAR_FLAG = -fopenmp
 endif
 

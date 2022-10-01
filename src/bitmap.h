@@ -50,7 +50,7 @@ class Bitmap {
   void reset() {
     std::fill(start_, end_, 0);
   }
-#ifdef ZFILL_CACHE_LINES
+#if defined(ZFILL_CACHE_LINES) && defined(__ARM_ARCH) && __ARM_ARCH >= 8
   void zero(size_t beg, size_t end) {
     uint64_t * const zfill_limit = start_ + word_offset(end) - ZFILL_OFFSET;
     uint64_t * const ustart = start_ + word_offset(beg);
