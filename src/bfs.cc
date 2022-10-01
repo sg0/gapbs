@@ -43,11 +43,44 @@ them in parent array as negative numbers. Thus the encoding of parent is:
 
 using namespace std;
 
+#ifdef ZFILL_CACHE_LINES
 int64_t BUStep(const Graph &g, pvector<NodeID> &parent, Bitmap &front,
                Bitmap &next) {
   int64_t awake_count = 0;
   next.reset();
+  NodeID nv = g.num_nodes();
+  NodeID NV_blk_sz = nv / ELEMS_PER_CACHE_LINE;
+  #pragma omp parallel for firstprivate(nv, NV_blk_sz) reduction(+ : awake_count) schedule(static)
+  for (NodeID u=0; u < NV_blk_sz; u++) {
+    NodeID NV_beg = u * ELEMS_PER_CACHE_LINE;
+    NodeID NV_end = std::min(nv, ((u + 1) * ELEMS_PER_CACHE_LINE));
+    
+    next.zero(NV_beg, NV_end);
+
+    for(NodeID j = 0; j < ELEMS_PER_CACHE_LINE; j++) {  
+      if (parent[NV_beg+j] < 0) {
+        for (NodeID v : g.in_neigh(NV_beg+j)) {
+          if (front.get_bit(v)) {
+            parent[NV_beg+j] = v;
+            awake_count++;
+            next.set_bit(NV_beg+j);
+            break;
+          }
+        }
+      }
+    }
+  }
+  return awake_count;
+}
+#else
+int64_t BUStep(const Graph &g, pvector<NodeID> &parent, Bitmap &front,
+               Bitmap &next) {
+  int64_t awake_count = 0;
+  next.reset();
+#if 0
   #pragma omp parallel for reduction(+ : awake_count) schedule(dynamic, 1024)
+#endif
+  #pragma omp parallel for reduction(+ : awake_count) schedule(static)
   for (NodeID u=0; u < g.num_nodes(); u++) {
     if (parent[u] < 0) {
       for (NodeID v : g.in_neigh(u)) {
@@ -62,7 +95,7 @@ int64_t BUStep(const Graph &g, pvector<NodeID> &parent, Bitmap &front,
   }
   return awake_count;
 }
-
+#endif
 
 int64_t TDStep(const Graph &g, pvector<NodeID> &parent,
                SlidingQueue<NodeID> &queue) {
