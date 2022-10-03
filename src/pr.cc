@@ -37,9 +37,28 @@ pvector<ScoreT> PageRankPullGS(const Graph &g, int max_iters,
   const ScoreT base_score = (1.0f - kDamp) / g.num_nodes();
   pvector<ScoreT> scores(g.num_nodes(), init_score);
   pvector<ScoreT> outgoing_contrib(g.num_nodes());
+#if defined(ZFILL_CACHE_LINES) && defined(__ARM_ARCH) && __ARM_ARCH >= 8
+  NodeID nv = g.num_nodes();
+  NodeID NV_blk_sz = nv / FLT_ELEMS_PER_CACHE_LINE;
+  #pragma omp parallel for firstprivate(nv, NV_blk_sz) schedule(static)
+  for (NodeID u=0; u < NV_blk_sz; u++) {
+    NodeID NV_beg = u * FLT_ELEMS_PER_CACHE_LINE;
+    NodeID NV_end = std::min(nv, ((u + 1) * FLT_ELEMS_PER_CACHE_LINE));
+    
+    float * const zfill_limit = outgoing_contrib.data() + NV_end - ZFILL_OFFSET_FLT;
+    float * const out_contrib_ = outgoing_contrib.data() + NV_beg;
+
+    if (out_contrib_ + ZFILL_OFFSET_FLT < zfill_limit)
+       zfill_flt(out_contrib_ + ZFILL_OFFSET_FLT);
+
+    for(NodeID j = 0; j < FLT_ELEMS_PER_CACHE_LINE; j++)
+      out_contrib_[j] = init_score / g.out_degree(j + NV_beg);
+  }
+#else  
   #pragma omp parallel for
   for (NodeID n=0; n < g.num_nodes(); n++)
     outgoing_contrib[n] = init_score / g.out_degree(n);
+#endif
   for (int iter=0; iter < max_iters; iter++) {
     double error = 0;
     #pragma omp parallel for reduction(+ : error) schedule(dynamic, 16384)

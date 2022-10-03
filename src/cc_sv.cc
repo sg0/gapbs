@@ -49,9 +49,28 @@ using namespace std;
 // independent of the edge's direction.
 pvector<NodeID> ShiloachVishkin(const Graph &g) {
   pvector<NodeID> comp(g.num_nodes());
+#if defined(ZFILL_CACHE_LINES) && defined(__ARM_ARCH) && __ARM_ARCH >= 8
+  NodeID nv = g.num_nodes();
+  NodeID NV_blk_sz = nv / I32_ELEMS_PER_CACHE_LINE;
+  #pragma omp parallel for firstprivate(nv, NV_blk_sz) schedule(static)
+  for (NodeID u=0; u < NV_blk_sz; u++) {
+    NodeID NV_beg = u * I32_ELEMS_PER_CACHE_LINE;
+    NodeID NV_end = std::min(nv, ((u + 1) * I32_ELEMS_PER_CACHE_LINE));
+    
+    int32_t * const zfill_limit = comp.data() + NV_end - ZFILL_OFFSET_I32;
+    int32_t * const comp_ = comp.data() + NV_beg;
+
+    if (comp_ + ZFILL_OFFSET_I32 < zfill_limit)
+       zfill_i32(comp_ + ZFILL_OFFSET_I32);
+
+    for(NodeID j = 0; j < I32_ELEMS_PER_CACHE_LINE; j++)
+      comp_[j] = n;
+  }
+#else 
   #pragma omp parallel for
   for (NodeID n=0; n < g.num_nodes(); n++)
     comp[n] = n;
+#endif
   bool change = true;
   int num_iter = 0;
   while (change) {

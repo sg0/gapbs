@@ -118,7 +118,40 @@ pvector<ScoreT> Brandes(const Graph &g, SourcePicker<Graph> &sp,
     pvector<ScoreT> deltas(g.num_nodes(), 0);
     t.Start();
     for (int d=depth_index.size()-2; d >= 0; d--) {
+#if 0
       #pragma omp parallel for schedule(dynamic, 64)
+#endif
+      #pragma omp parallel for schedule(static)
+#if defined(ZFILL_CACHE_LINES) && defined(__ARM_ARCH) && __ARM_ARCH >= 8
+	const NodeID count = depth_index[d+1] - depth_index[d];
+	const NodeID chunk = (count / FLT_ELEMS_PER_CACHE_LINE) == 0 ? count : count / FLT_ELEMS_PER_CACHE_LINE;
+	for(NodeID e = 0; e < chunk; e++) {
+	  NodeID DP_beg;
+	  if (chunk > FLT_ELEMS_PER_CACHE_LINE)
+	    DP_beg = depth_index[d] + e * FLT_ELEMS_PER_CACHE_LINE;
+	  else
+	    DP_beg = depth_index[d];
+	  NodeID DP_end = std::min(depth_index[d+1], (DP_beg + FLT_ELEMS_PER_CACHE_LINE));
+	  ScoreT * const zfill_limit = scores.data() + DP_end - FLT_ZFILL_OFFSET;
+				
+	  ScoreT *scores_ = scores.data() + DP_beg;
+	  ScoreT * const deltas_ = deltas.data() + DP_beg;
+
+	  if (scores_ + FLT_ZFILL_OFFSET < zfill_limit)
+            zfill_flt(scores_ + FLT_ZFILL_OFFSET);
+
+	  for (NodeID j = 0; j < FLT_ELEMS_PER_CACHE_LINE; j++) {
+	    ScoreT delta_u = 0;
+            for (NodeID &v : g.out_neigh(DP_beg + j)) {
+              if (succ.get_bit(&v - g_out_start)) {
+                delta_u += (path_counts[DP_beg + j] / path_counts[v]) * (1 + deltas[v]);
+              }
+            }
+            deltas[DP_beg + j] = delta_u;
+            scores[DP_beg + j] += delta_u;
+	  }
+	}
+#else
       for (auto it = depth_index[d]; it < depth_index[d+1]; it++) {
         NodeID u = *it;
         ScoreT delta_u = 0;
@@ -130,6 +163,7 @@ pvector<ScoreT> Brandes(const Graph &g, SourcePicker<Graph> &sp,
         deltas[u] = delta_u;
         scores[u] += delta_u;
       }
+#endif
     }
     t.Stop();
     PrintStep("p", t.Seconds());
