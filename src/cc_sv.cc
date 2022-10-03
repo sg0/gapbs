@@ -57,14 +57,14 @@ pvector<NodeID> ShiloachVishkin(const Graph &g) {
     NodeID NV_beg = u * I32_ELEMS_PER_CACHE_LINE;
     NodeID NV_end = std::min(nv, ((u + 1) * I32_ELEMS_PER_CACHE_LINE));
     
-    int32_t * const zfill_limit = comp.data() + NV_end - ZFILL_OFFSET_I32;
+    int32_t * const zfill_limit = comp.data() + NV_end - I32_ZFILL_OFFSET;
     int32_t * const comp_ = comp.data() + NV_beg;
 
-    if (comp_ + ZFILL_OFFSET_I32 < zfill_limit)
-       zfill_i32(comp_ + ZFILL_OFFSET_I32);
+    if (comp_ + I32_ZFILL_OFFSET < zfill_limit)
+       zfill_i32(comp_ + I32_ZFILL_OFFSET);
 
     for(NodeID j = 0; j < I32_ELEMS_PER_CACHE_LINE; j++)
-      comp_[j] = n;
+      comp_[j] = j + NV_beg;
   }
 #else 
   #pragma omp parallel for

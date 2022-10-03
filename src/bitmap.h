@@ -33,11 +33,11 @@ static const int FLT_ELEMS_PER_CACHE_LINE = CACHE_LINE_SIZE_BYTES / sizeof(float
 static const int DBL_ELEMS_PER_CACHE_LINE = CACHE_LINE_SIZE_BYTES / sizeof(double);
 
 /* Offset from a[j] to zfill */
-static const int ZFILL_OFFSET_I32 = ZFILL_DISTANCE * I32_ELEMS_PER_CACHE_LINE;
-static const int ZFILL_OFFSET_I64 = ZFILL_DISTANCE * I64_ELEMS_PER_CACHE_LINE;
-static const int ZFILL_OFFSET_U64 = ZFILL_DISTANCE * U64_ELEMS_PER_CACHE_LINE;
-static const int ZFILL_OFFSET_FLT = ZFILL_DISTANCE * FLT_ELEMS_PER_CACHE_LINE;
-static const int ZFILL_OFFSET_DBL = ZFILL_DISTANCE * DBL_ELEMS_PER_CACHE_LINE;
+static const int I32_ZFILL_OFFSET = ZFILL_DISTANCE * I32_ELEMS_PER_CACHE_LINE;
+static const int I64_ZFILL_OFFSET = ZFILL_DISTANCE * I64_ELEMS_PER_CACHE_LINE;
+static const int U64_ZFILL_OFFSET = ZFILL_DISTANCE * U64_ELEMS_PER_CACHE_LINE;
+static const int FLT_ZFILL_OFFSET = ZFILL_DISTANCE * FLT_ELEMS_PER_CACHE_LINE;
+static const int DBL_ZFILL_OFFSET = ZFILL_DISTANCE * DBL_ELEMS_PER_CACHE_LINE;
 
 static inline void zfill_i32(int32_t * a) 
 { asm volatile("dc zva, %0": : "r"(a)); }
@@ -72,11 +72,11 @@ class Bitmap {
   }
 #if defined(ZFILL_CACHE_LINES) && defined(__ARM_ARCH) && __ARM_ARCH >= 8
   void zero(size_t beg, size_t end) {
-    uint64_t * const zfill_limit = start_ + word_offset(end) - ZFILL_OFFSET_U64;
+    uint64_t * const zfill_limit = start_ + word_offset(end) - U64_ZFILL_OFFSET;
     uint64_t * const ustart = start_ + word_offset(beg);
 
-    if (ustart + ZFILL_OFFSET_U64 < zfill_limit)
-       zfill_u64(ustart + ZFILL_OFFSET_U64);
+    if (ustart + U64_ZFILL_OFFSET < zfill_limit)
+       zfill_u64(ustart + U64_ZFILL_OFFSET);
   }
 #endif
 
