@@ -50,13 +50,13 @@ pvector<ScoreT> PageRankPull(const Graph &g, int max_iters,
       NodeID NV_end = std::min(nv, ((u + 1) * FLT_ELEMS_PER_CACHE_LINE));
     
       float * const zfill_limit = outgoing_contrib.data() + NV_end - FLT_ZFILL_OFFSET;
-      float * const out_contrib_ = outgoing_contrib.data() + NV_beg;
+      float * out_contrib_ = outgoing_contrib.data() + NV_beg;
 
       if (out_contrib_ + FLT_ZFILL_OFFSET < zfill_limit)
         zfill_flt(out_contrib_ + FLT_ZFILL_OFFSET);
 
       for(NodeID j = 0; j < FLT_ELEMS_PER_CACHE_LINE; j++)
-        out_contrib_[j] = init_score / g.out_degree(j + NV_beg);
+        out_contrib_[j] = scores[j + NV_beg] / g.out_degree(j + NV_beg);
     }
 #else 
     #pragma omp parallel for
