@@ -98,13 +98,13 @@ pvector<NodeID> Afforest(const Graph &g, int32_t neighbor_rounds = 2) {
 #if defined(ZFILL_CACHE_LINES) && defined(__ARM_ARCH) && __ARM_ARCH >= 8
   NodeID nv = g.num_nodes();
   NodeID NV_blk_sz = nv / I32_ELEMS_PER_CACHE_LINE;
-  #pragma omp parallel for firstprivate(nv, NV_blk_sz) schedule(static)
+  #pragma omp parallel for schedule(static)
   for (NodeID u=0; u < NV_blk_sz; u++) {
     NodeID NV_beg = u * I32_ELEMS_PER_CACHE_LINE;
     NodeID NV_end = std::min(nv, ((u + 1) * I32_ELEMS_PER_CACHE_LINE));
     
     int32_t * const zfill_limit = comp.data() + NV_end - I32_ZFILL_OFFSET;
-    int32_t * const comp_ = comp.data() + NV_beg;
+    int32_t * __restrict__ const comp_ = comp.data() + NV_beg;
 
     if (comp_ + I32_ZFILL_OFFSET < zfill_limit)
        zfill_i32(comp_ + I32_ZFILL_OFFSET);
