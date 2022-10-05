@@ -124,9 +124,9 @@ pvector<ScoreT> Brandes(const Graph &g, SourcePicker<Graph> &sp,
 #if defined(ZFILL_CACHE_LINES) && defined(__ARM_ARCH) && __ARM_ARCH >= 8
 	auto it_end = depth_index[d + 1];
 	auto it_beg = depth_index[d];
-	const NodeID count = *it_end - *it_beg;
+	const NodeID count = *it_end - *it_beg + 1;
 	const NodeID chunk = (count / FLT_ELEMS_PER_CACHE_LINE) == 0 ? count : count / FLT_ELEMS_PER_CACHE_LINE;
-        #pragma omp parallel for firstprivate(count) schedule(static)
+        #pragma omp parallel for firstprivate(count, chunk) schedule(static)
 	for(NodeID e = 0; e < chunk; e++) {
 	  NodeID DP_beg;
 	  if (chunk > FLT_ELEMS_PER_CACHE_LINE)
