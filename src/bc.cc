@@ -134,13 +134,13 @@ pvector<ScoreT> Brandes(const Graph &g, SourcePicker<Graph> &sp,
 	  else
 	    DP_beg = *it_beg;
 	  NodeID DP_end = std::min(*it_end, (DP_beg + FLT_ELEMS_PER_CACHE_LINE));
-	  ScoreT * const zfill_limit = scores.data() + DP_end - FLT_ZFILL_OFFSET;
+	  ScoreT * const zfill_limit = deltas.data() + DP_end - FLT_ZFILL_OFFSET;
 				
 	  ScoreT *scores_ = scores.data() + DP_beg;
-	  ScoreT * const deltas_ = deltas.data() + DP_beg;
+	  ScoreT *deltas_ = deltas.data() + DP_beg;
 
-	  if (scores_ + FLT_ZFILL_OFFSET < zfill_limit)
-            zfill_flt(scores_ + FLT_ZFILL_OFFSET);
+	  if (deltas_ + FLT_ZFILL_OFFSET < zfill_limit)
+            zfill_flt(deltas_ + FLT_ZFILL_OFFSET);
 
 	  for (NodeID j = 0; j < FLT_ELEMS_PER_CACHE_LINE; j++) {
 	    ScoreT delta_u = 0;
@@ -149,8 +149,8 @@ pvector<ScoreT> Brandes(const Graph &g, SourcePicker<Graph> &sp,
                 delta_u += (path_counts[DP_beg + j] / path_counts[v]) * (1 + deltas[v]);
               }
             }
-            deltas[DP_beg + j] = delta_u;
-            scores[DP_beg + j] += delta_u;
+            deltas_[j] = delta_u;
+            scores_[j] += delta_u;
 	  }
 	}
 #else
