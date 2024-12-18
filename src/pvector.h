@@ -79,6 +79,7 @@ class pvector {
     ReleaseResources();
   }
 
+  /// FAM related allocation is static and never resized
   // not thread-safe
   void reserve(size_t num_elements) {
     if (num_elements > capacity()) {

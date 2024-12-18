@@ -13,6 +13,9 @@
 #include "pvector.h"
 #include "util.h"
 
+#if defined(USE_RAPID_FAM_ALLOC)
+#include "rapid.h"
+#endif
 
 /*
 GAP Benchmark Suite
@@ -92,7 +95,6 @@ struct EdgePair {
 typedef int32_t SGID;
 typedef EdgePair<SGID> SGEdge;
 typedef int64_t SGOffset;
-
 
 
 template <class NodeID_, class DestID_ = NodeID_, bool MakeInverse = true>
@@ -238,6 +240,17 @@ class CSRGraph {
       std::cout << std::endl;
     }
   }
+
+#if defined(USE_RAPID_FAM_ALLOC)
+ static DestID_** GenIndex(const pvector<SGOffset> &offsets, DestID_* neighs, rapid_handle& rapid) {
+    NodeID_ length = offsets.size();
+    DestID_** index = static_cast<DestID_**>(rapid_malloc(rapid, length*sizeof(DestID_*)));
+    #pragma omp parallel for
+    for (NodeID_ n=0; n < length; n++)
+      index[n] = neighs + offsets[n];
+    return index;
+  }
+#endif
 
   static DestID_** GenIndex(const pvector<SGOffset> &offsets, DestID_* neighs) {
     NodeID_ length = offsets.size();

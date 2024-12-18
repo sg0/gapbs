@@ -1,7 +1,8 @@
 # See LICENSE.txt for license details.
 CXX = g++
-CXX_FLAGS += -std=c++11 -O3 -Wall
+CXX_FLAGS += -std=c++20 -O3 -Wall
 PAR_FLAG = -fopenmp
+ENABLE_RAPID_FAM = 1
 
 ifneq (,$(findstring icpc,$(CXX)))
 	PAR_FLAG = -openmp
@@ -18,7 +19,7 @@ ifneq (,$(findstring FCC,$(CXX)))
 endif
 
 ifneq (,$(findstring g++,$(CXX)))
-	CXX_FLAGS = -std=c++11 -O3 -march=armv8.2-a+sve -mtune=a64fx #-DZFILL_CACHE_LINES 
+	CXX_FLAGS = #-std=c++11 -O3 -march=armv8.2-a+sve -mtune=a64fx #-DZFILL_CACHE_LINES 
 	PAR_FLAG = -fopenmp
 endif
 
@@ -31,6 +32,12 @@ ifneq ($(SERIAL), 1)
 	CXX_FLAGS += $(PAR_FLAG)
 endif
 
+ifneq ($(ENABLE_RAPID_FAM),0)
+	RAPID_ROOT = /share/micron/rapid/install/gcc-release
+	CXX_FLAGS += -DUSE_RAPID_FAM_ALLOC -I$(RAPID_ROOT)/include
+	LDFLAGS += -Wl,-rpath=$(RAPID_ROOT)/lib64 -L$(RAPID_ROOT)/lib64 -lrapid 
+endif
+
 KERNELS = bc bfs cc cc_sv pr pr_spmv sssp tc
 SUITE = $(KERNELS) converter
 
@@ -38,7 +45,7 @@ SUITE = $(KERNELS) converter
 all: $(SUITE)
 
 % : src/%.cc src/*.h
-	$(CXX) $(CXX_FLAGS) $< -o $@
+	$(CXX) $(CXX_FLAGS) $< -o $@ $(LDFLAGS)
 
 # Testing
 include test/test.mk

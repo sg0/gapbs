@@ -20,7 +20,6 @@
 #include "timer.h"
 #include "util.h"
 
-
 /*
 GAP Benchmark Suite
 Class:  BuilderBase
@@ -46,8 +45,15 @@ class BuilderBase {
   bool in_place_ = false;
   int64_t num_nodes_ = -1;
 
+#if defined(USE_RAPID_FAM_ALLOC)
+  rapid_handle rapid;
+#endif
+
  public:
   explicit BuilderBase(const CLBase &cli) : cli_(cli) {
+#if defined(USE_RAPID_FAM_ALLOC)
+    rapid = rapid_initialize();
+#endif
     symmetrize_ = cli_.symmetrize();
     needs_weights_ = !std::is_same<NodeID_, DestID_>::value;
     in_place_ = cli_.in_place();
@@ -57,6 +63,13 @@ class BuilderBase {
       exit(-30);
     }
   }
+
+#if defined(USE_RAPID_FAM_ALLOC)
+  ~BuilderBase() 
+  { 
+    rapid_finalize(rapid); 
+  }
+#endif
 
   DestID_ GetSource(EdgePair<NodeID_, NodeID_> e) {
     return e.u;
@@ -300,8 +313,13 @@ class BuilderBase {
                DestID_** neighs) {
     pvector<NodeID_> degrees = CountDegrees(el, transpose);
     pvector<SGOffset> offsets = ParallelPrefixSum(degrees);
+#if defined(USE_RAPID_FAM_ALLOC)
+    *neighs = static_cast<DestID_*>(rapid_malloc(rapid, offsets[num_nodes_]*sizeof(DestID_)));
+    *index = CSRGraph<NodeID_, DestID_>::GenIndex(offsets, *neighs, rapid);
+#else
     *neighs = new DestID_[offsets[num_nodes_]];
     *index = CSRGraph<NodeID_, DestID_>::GenIndex(offsets, *neighs);
+#endif
     #pragma omp parallel for
     for (auto it = el.begin(); it < el.end(); it++) {
       Edge e = *it;
