@@ -2,7 +2,7 @@
 CXX = g++
 CXX_FLAGS += -std=c++20 -O3 -Wall
 PAR_FLAG = -fopenmp
-ENABLE_RAPID_FAM = 1
+ENABLE_RAPID_FAM = 0
 
 ifneq (,$(findstring icpc,$(CXX)))
 	PAR_FLAG = -openmp
