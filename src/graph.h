@@ -119,6 +119,8 @@ class CSRGraph {
   };
 
   void ReleaseResources() {
+#if defined(USE_RAPID_FAM_ALLOC)
+#else
     if (out_index_ != nullptr)
       delete[] out_index_;
     if (out_neighbors_ != nullptr)
@@ -129,6 +131,7 @@ class CSRGraph {
       if (in_neighbors_ != nullptr)
         delete[] in_neighbors_;
     }
+#endif
   }
 
 

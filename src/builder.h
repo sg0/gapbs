@@ -47,6 +47,7 @@ class BuilderBase {
 
 #if defined(USE_RAPID_FAM_ALLOC)
   rapid_handle rapid;
+  DestID_ **neighs_fam, ***index_fam;
 #endif
 
  public:
@@ -66,7 +67,9 @@ class BuilderBase {
 
 #if defined(USE_RAPID_FAM_ALLOC)
   ~BuilderBase() 
-  { 
+  {
+    rapid_free(rapid, *neighs_fam); 
+    rapid_free(rapid, *index_fam); 
     rapid_finalize(rapid); 
   }
 #endif
@@ -316,6 +319,8 @@ class BuilderBase {
 #if defined(USE_RAPID_FAM_ALLOC)
     *neighs = static_cast<DestID_*>(rapid_malloc(rapid, offsets[num_nodes_]*sizeof(DestID_)));
     *index = CSRGraph<NodeID_, DestID_>::GenIndex(offsets, *neighs, rapid);
+    neighs_fam = neighs;
+    index_fam = index;
 #else
     *neighs = new DestID_[offsets[num_nodes_]];
     *index = CSRGraph<NodeID_, DestID_>::GenIndex(offsets, *neighs);
